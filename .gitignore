@@ -1,0 +1,17 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+build/
+dist/
+*.egg-info/
+data/chroma/
+data/uploads/
+data/sources/raw/
+data/sources/sources.jsonl
+data/index/
+outputs/*
+!outputs/.gitkeep

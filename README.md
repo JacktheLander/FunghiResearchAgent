@@ -1,0 +1,74 @@
+# Fungi RAG Learning System
+
+This project is a local, academic RAG system for learning about fungi. It is designed
+to demonstrate retrieval engineering rather than simple API wrapping:
+
+- source download and provenance tracking
+- extraction, normalization, chunking, and deduplication
+- local dense retrieval plus BM25 keyword retrieval
+- reciprocal-rank fusion and diversity filtering
+- evidence packets with source IDs and snippets
+- Codex prompt/response bridge for generation
+- citation auditing, safety checks, exports, and evaluation
+
+The default path does not require `OPENAI_API_KEY`. Codex generation is integrated
+through file-based task packets under `outputs/<run_id>/codex_tasks/`.
+
+## Clone And Setup
+
+Use Python 3.12 or newer. The commands below work on macOS/Linux shells and
+PowerShell unless otherwise noted:
+
+```bash
+git clone https://github.com/JacktheLander/FunghiResearchAgent.git
+cd FunghiResearchAgent
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev,eval]"
+```
+
+On Windows PowerShell, activate the environment with:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+The app stores runtime data under relative project paths by default:
+`data/`, `outputs/`, and `data/chroma/`. Override these with `.env` settings
+when needed.
+
+## Commands
+
+```bash
+python -m fungi_rag.sources download
+python -m fungi_rag.ingest data/sources/raw
+python -m fungi_rag.app
+python -m fungi_rag.run examples/fungi_research_brief.yaml
+python -m fungi_rag.evaluate
+```
+
+Then open `http://127.0.0.1:7860`.
+
+The first run may download the configured local embedding model. No API key is
+required for the default Codex-bridge and local embedding path.
+
+## Codex Bridge
+
+Each generation step writes:
+
+- `outputs/<run_id>/codex_tasks/<step>.prompt.md`
+- `outputs/<run_id>/codex_tasks/<step>.evidence.json`
+- `outputs/<run_id>/codex_tasks/<step>.schema.json`
+
+Codex or a human reviewer writes:
+
+- `outputs/<run_id>/codex_tasks/<step>.response.md`
+- optional `outputs/<run_id>/codex_tasks/<step>.response.json`
+
+The app validates citations and safety rules before accepting the response.
+
+## Safety Boundary
+
+The system refuses edibility, dosage, medical decisions, field identification, and
+"is this safe to eat" questions. It allows academic discussion of fungal traits,
+ecology, toxicity, and risk with expert-verification guidance.

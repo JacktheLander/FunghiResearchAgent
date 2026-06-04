@@ -1,0 +1,23 @@
+title: "Fungi as Decomposers and Symbiotic Partners"
+topic: "fungi ecology"
+learning_objectives:
+  - "Explain how fungal hyphae and mycelia support nutrient acquisition."
+  - "Compare decomposition, mycorrhizal symbiosis, and pathogenic lifestyles."
+  - "Describe why citation-backed evidence matters in academic mycology writing."
+audience: "Upper-division undergraduate biology learners"
+section_names:
+  - "Morphology and Growth"
+  - "Decomposition"
+  - "Mycorrhizal Symbiosis"
+  - "Pathogens and Safety Boundaries"
+number_of_paragraphs:
+  "Morphology and Growth": 3
+  "Decomposition": 3
+  "Mycorrhizal Symbiosis": 3
+  "Pathogens and Safety Boundaries": 2
+source_strategy: "seed"
+seed_references: []
+number_of_queries: 6
+max_revisions: 2
+temperature: 0.2
+safety_mode: "strict"

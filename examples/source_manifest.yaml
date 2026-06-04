@@ -1,0 +1,103 @@
+sources:
+  - id: openstax_bio_24_1
+    title: "OpenStax Biology 2e: Characteristics of Fungi"
+    url: "https://openstax.org/books/biology-2e/pages/24-1-characteristics-of-fungi"
+    source_type: "html"
+    license_note: "OpenStax open educational resource"
+    topics: ["morphology", "hyphae", "mycelium"]
+  - id: openstax_bio_24_2
+    title: "OpenStax Biology 2e: Classifications of Fungi"
+    url: "https://openstax.org/books/biology-2e/pages/24-2-classifications-of-fungi"
+    source_type: "html"
+    license_note: "OpenStax open educational resource"
+    topics: ["taxonomy", "classification"]
+  - id: openstax_bio_24_3
+    title: "OpenStax Biology 2e: Ecology of Fungi"
+    url: "https://openstax.org/books/biology-2e/pages/24-3-ecology-of-fungi"
+    source_type: "html"
+    license_note: "OpenStax open educational resource"
+    topics: ["ecology", "symbiosis", "decomposition"]
+  - id: openstax_bio_24_4
+    title: "OpenStax Biology 2e: Fungal Parasites and Pathogens"
+    url: "https://openstax.org/books/biology-2e/pages/24-4-fungal-parasites-and-pathogens"
+    source_type: "html"
+    license_note: "OpenStax open educational resource"
+    topics: ["pathogens", "plant disease", "animal disease"]
+  - id: openstax_bio_24_5
+    title: "OpenStax Biology 2e: Importance of Fungi in Human Life"
+    url: "https://openstax.org/books/biology-2e/pages/24-5-importance-of-fungi-in-human-life"
+    source_type: "html"
+    license_note: "OpenStax open educational resource"
+    topics: ["biotechnology", "food", "medicine"]
+  - id: openstax_micro_5_3
+    title: "OpenStax Microbiology: Fungi"
+    url: "https://openstax.org/books/microbiology/pages/5-3-fungi"
+    source_type: "html"
+    license_note: "OpenStax open educational resource"
+    topics: ["microbiology", "fungal cells"]
+  - id: openstax_micro_21_4
+    title: "OpenStax Microbiology: Mycoses of the Skin"
+    url: "https://openstax.org/books/microbiology/pages/21-4-mycoses-of-the-skin"
+    source_type: "html"
+    license_note: "OpenStax open educational resource"
+    topics: ["mycoses", "pathogens"]
+  - id: openstax_micro_22_4
+    title: "OpenStax Microbiology: Respiratory Mycoses"
+    url: "https://openstax.org/books/microbiology/pages/22-4-respiratory-mycoses"
+    source_type: "html"
+    license_note: "OpenStax open educational resource"
+    topics: ["mycoses", "respiratory disease"]
+  - id: ncbi_mycology
+    title: "NCBI Bookshelf: Mycology"
+    url: "https://www.ncbi.nlm.nih.gov/books/NBK8205/"
+    source_type: "html"
+    license_note: "NCBI Bookshelf public access"
+    topics: ["mycology", "medical fungi"]
+  - id: pmc_am_fungi_diversity
+    title: "Arbuscular Mycorrhizal Fungi Diversity"
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC3817225/"
+    source_type: "html"
+    license_note: "PMC open-access article"
+    topics: ["mycorrhizae", "diversity", "symbiosis"]
+  - id: pmc_fungal_evolution
+    title: "Fungal Evolution"
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC6899921/"
+    source_type: "html"
+    license_note: "PMC open-access article"
+    topics: ["evolution", "phylogeny"]
+  - id: pmc_genome_phylogeny
+    title: "Genome-scale Phylogeny and Classification of Fungi"
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC8347878/"
+    source_type: "html"
+    license_note: "PMC open-access article"
+    topics: ["phylogeny", "taxonomy"]
+  - id: pmc_fungal_taxonomy
+    title: "Fungal Taxonomy and Nomenclature"
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC10116568/"
+    source_type: "html"
+    license_note: "PMC open-access article"
+    topics: ["taxonomy", "nomenclature"]
+  - id: pmc_ecosystem_mediators
+    title: "Fungi as Ecosystem Mediators"
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC8892540/"
+    source_type: "html"
+    license_note: "PMC open-access article"
+    topics: ["ecosystems", "ecology"]
+  - id: pmc_fungal_traits
+    title: "Fungal Ecosystem Traits"
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC4429240/"
+    source_type: "html"
+    license_note: "PMC open-access article"
+    topics: ["traits", "ecology"]
+  - id: pmc_secondary_metabolism
+    title: "Fungal Secondary Metabolism"
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC6381595/"
+    source_type: "html"
+    license_note: "PMC open-access article"
+    topics: ["secondary metabolites", "toxins"]
+  - id: pmc_mycotoxins
+    title: "Mycotoxins: Risks and Toxicology"
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC164220/"
+    source_type: "html"
+    license_note: "PMC open-access article"
+    topics: ["mycotoxins", "toxicology"]
