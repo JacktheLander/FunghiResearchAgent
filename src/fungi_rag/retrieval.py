@@ -123,7 +123,13 @@ class LocalVectorIndex:
 class ChromaVectorIndex:
     """Optional Chroma-backed dense index. Falls back to LocalVectorIndex when unavailable."""
 
-    def __init__(self, chunks: list[SourceChunk], embeddings: EmbeddingBackend, persist_dir: Path) -> None:
+    def __init__(
+        self,
+        chunks: list[SourceChunk],
+        embeddings: EmbeddingBackend,
+        persist_dir: Path,
+        collection_name: str = "fungi_chunks",
+    ) -> None:
         try:
             import chromadb
         except ImportError as exc:
@@ -131,7 +137,7 @@ class ChromaVectorIndex:
         self.chunks = chunks
         self.embeddings = embeddings
         self.client = chromadb.PersistentClient(path=str(persist_dir))
-        self.collection = self.client.get_or_create_collection("fungi_chunks")
+        self.collection = self.client.get_or_create_collection(collection_name)
         if chunks:
             existing = set(self.collection.get(include=[])["ids"])
             missing = [chunk for chunk in chunks if chunk.chunk_id not in existing]
@@ -181,20 +187,33 @@ class HybridRetriever:
         embeddings: EmbeddingBackend,
         settings: Settings,
         prefer_chroma: bool = True,
+        corpus_role: str | None = None,
     ) -> None:
-        self.chunks = chunks
+        self.corpus_role = corpus_role
+        self.chunks = filter_chunks_by_role(chunks, corpus_role)
         self.embeddings = embeddings
         self.settings = settings
-        self.keyword = BM25Retriever(chunks)
+        self.keyword = BM25Retriever(self.chunks)
         self.vector = self._build_vector_index(prefer_chroma)
 
     @classmethod
-    def from_settings(cls, settings: Settings | None = None, prefer_chroma: bool = True) -> "HybridRetriever":
+    def from_settings(
+        cls,
+        settings: Settings | None = None,
+        prefer_chroma: bool = True,
+        corpus_role: str | None = None,
+    ) -> "HybridRetriever":
         settings = settings or get_settings()
         repo = ChunkRepository(settings.index_dir)
         chunks = repo.load_chunks()
         embeddings = build_embedding_backend(settings.embedding_backend, settings.embedding_model)
-        return cls(chunks, embeddings=embeddings, settings=settings, prefer_chroma=prefer_chroma)
+        return cls(
+            chunks,
+            embeddings=embeddings,
+            settings=settings,
+            prefer_chroma=prefer_chroma,
+            corpus_role=corpus_role,
+        )
 
     def retrieve(self, query: str, top_k: int | None = None, run_id: str | None = None) -> tuple[EvidencePacket, RagTrace]:
         top_k = top_k or self.settings.retrieval_top_k
@@ -246,7 +265,15 @@ class HybridRetriever:
     def _build_vector_index(self, prefer_chroma: bool) -> LocalVectorIndex | ChromaVectorIndex:
         if prefer_chroma:
             try:
-                return ChromaVectorIndex(self.chunks, self.embeddings, self.settings.chroma_dir)
+                collection_name = (
+                    f"fungi_{self.corpus_role}_chunks" if self.corpus_role else "fungi_chunks"
+                )
+                return ChromaVectorIndex(
+                    self.chunks,
+                    self.embeddings,
+                    self.settings.chroma_dir,
+                    collection_name=collection_name,
+                )
             except RuntimeError:
                 pass
         return LocalVectorIndex(self.chunks, self.embeddings)
@@ -348,3 +375,13 @@ class FusedResult:
             "keyword_score": self.score_components.get("keyword", 0.0),
             "rejection_reason": self.rejection_reason,
         }
+
+
+def filter_chunks_by_role(chunks: list[SourceChunk], corpus_role: str | None) -> list[SourceChunk]:
+    if corpus_role is None:
+        return chunks
+    return [
+        chunk
+        for chunk in chunks
+        if str(chunk.metadata.get("corpus_role") or "background").lower() == corpus_role
+    ]

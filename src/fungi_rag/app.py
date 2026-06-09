@@ -45,11 +45,40 @@ def build_app():
             manifest_path = gr.Textbox(label="Source manifest", value="examples/source_manifest.yaml")
             download_button = gr.Button("Download Seed Academic Corpus")
             download_status = gr.JSON(label="Download status")
-            ingest_path = gr.Textbox(label="Path to ingest", value=str(settings.source_raw_dir))
-            ingest_button = gr.Button("Ingest Path")
-            ingest_status = gr.JSON(label="Ingestion status")
+            gr.Markdown("### Project folders")
+            background_path = gr.Textbox(
+                label="Background information folder",
+                value=str(settings.background_dir),
+            )
+            references_path = gr.Textbox(
+                label="Bibliographic references folder",
+                value=str(settings.references_dir),
+            )
+            ingest_background_button = gr.Button("Ingest Background Folder")
+            ingest_references_button = gr.Button("Ingest References Folder")
+            ingest_project_button = gr.Button("Ingest Background + References")
+            project_ingest_status = gr.JSON(label="Project folder ingestion status")
+            gr.Markdown("### Seed corpus")
+            ingest_path = gr.Textbox(label="Seed corpus path to ingest", value=str(settings.source_raw_dir))
+            ingest_button = gr.Button("Ingest Seed Corpus")
+            ingest_status = gr.JSON(label="Seed ingestion status")
             download_button.click(download_sources_ui, inputs=manifest_path, outputs=download_status)
             ingest_button.click(ingest_ui, inputs=ingest_path, outputs=ingest_status)
+            ingest_background_button.click(
+                ingest_background_ui,
+                inputs=background_path,
+                outputs=project_ingest_status,
+            )
+            ingest_references_button.click(
+                ingest_references_ui,
+                inputs=references_path,
+                outputs=project_ingest_status,
+            )
+            ingest_project_button.click(
+                ingest_project_folders_ui,
+                inputs=[background_path, references_path],
+                outputs=project_ingest_status,
+            )
 
         with gr.Tab("Research Run"):
             run_button = gr.Button("Create Codex Outline/Draft Packets")
@@ -87,6 +116,28 @@ def download_sources_ui(manifest_path: str) -> dict[str, Any]:
 def ingest_ui(path: str) -> dict[str, Any]:
     chunks = DocumentIngestor().ingest_path(Path(path))
     return {"chunks": len(chunks), "path": path}
+
+
+def ingest_background_ui(path: str) -> dict[str, Any]:
+    chunks = DocumentIngestor().ingest_path(Path(path), corpus_role="background")
+    return {"background_chunks": len(chunks), "background_path": path}
+
+
+def ingest_references_ui(path: str) -> dict[str, Any]:
+    chunks = DocumentIngestor().ingest_path(Path(path), corpus_role="reference")
+    return {"reference_chunks": len(chunks), "references_path": path}
+
+
+def ingest_project_folders_ui(background_path: str, references_path: str) -> dict[str, Any]:
+    ingestor = DocumentIngestor()
+    background_chunks = ingestor.ingest_path(Path(background_path), corpus_role="background")
+    reference_chunks = ingestor.ingest_path(Path(references_path), corpus_role="reference")
+    return {
+        "background_chunks": len(background_chunks),
+        "reference_chunks": len(reference_chunks),
+        "background_path": background_path,
+        "references_path": references_path,
+    }
 
 
 def run_research_ui(text: str) -> dict[str, Any]:

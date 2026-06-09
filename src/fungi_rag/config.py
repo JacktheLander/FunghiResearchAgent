@@ -28,6 +28,8 @@ class Settings(BaseSettings):
 
     chroma_dir: Path = Path("data/chroma")
     upload_dir: Path = Path("data/uploads")
+    background_dir: Path = Path("data/background")
+    references_dir: Path = Path("data/references")
     source_raw_dir: Path = Path("data/sources/raw")
     source_state_path: Path = Path("data/sources/sources.jsonl")
     index_dir: Path = Path("data/index")
@@ -44,6 +46,8 @@ class Settings(BaseSettings):
         for path in [
             self.chroma_dir,
             self.upload_dir,
+            self.background_dir,
+            self.references_dir,
             self.source_raw_dir,
             self.source_state_path.parent,
             self.index_dir,

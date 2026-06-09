@@ -11,8 +11,8 @@ to demonstrate retrieval engineering rather than simple API wrapping:
 - Codex prompt/response bridge for generation
 - citation auditing, safety checks, exports, and evaluation
 
-The default path does not require `OPENAI_API_KEY`. Codex generation is integrated
-through file-based task packets under `outputs/<run_id>/codex_tasks/`.
+The default path does not require `OPENAI_API_KEY`. Generation writes file-based
+task packets under `outputs/<run_id>/codex_tasks/`.
 
 ## Clone And Setup
 

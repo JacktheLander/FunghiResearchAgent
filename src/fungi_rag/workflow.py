@@ -24,6 +24,8 @@ class FungiWorkflow:
     ) -> None:
         self.settings = settings or get_settings()
         self._retriever = retriever
+        self._background_retriever: HybridRetriever | None = None
+        self._reference_retriever: HybridRetriever | None = None
         self._generator = generator
         self.safety = SafetyPolicy("strict")
 
@@ -32,6 +34,24 @@ class FungiWorkflow:
         if self._retriever is None:
             self._retriever = HybridRetriever.from_settings(self.settings)
         return self._retriever
+
+    @property
+    def background_retriever(self) -> HybridRetriever:
+        if self._background_retriever is None:
+            self._background_retriever = HybridRetriever.from_settings(
+                self.settings,
+                corpus_role="background",
+            )
+        return self._background_retriever
+
+    @property
+    def reference_retriever(self) -> HybridRetriever:
+        if self._reference_retriever is None:
+            self._reference_retriever = HybridRetriever.from_settings(
+                self.settings,
+                corpus_role="reference",
+            )
+        return self._reference_retriever
 
     @property
     def generator(self) -> Generator:
@@ -54,7 +74,17 @@ class FungiWorkflow:
                 "reason": decision.reason,
                 "output_dir": str(output_dir),
             }
-        packet, trace = self.retriever.retrieve(question, run_id=run_id)
+        background_packet, background_trace = self.background_retriever.retrieve(
+            question,
+            top_k=3,
+            run_id=f"{run_id}-background",
+        )
+        reference_packet, reference_trace = self.reference_retriever.retrieve(
+            question,
+            top_k=3,
+            run_id=f"{run_id}-reference",
+        )
+        packet = merge_packets(question, [background_packet, reference_packet], max_items=6)
         request = GenerationRequest(
             run_id=run_id,
             step="ask",
@@ -63,14 +93,20 @@ class FungiWorkflow:
             output_dir=output_dir,
         )
         result = self.generator.generate(request)
-        trace.generator_packet_path = result.prompt_path
+        background_trace.generator_packet_path = result.prompt_path
+        reference_trace.generator_packet_path = result.prompt_path
         return {
             "run_id": run_id,
             "status": result.status,
             "answer": result.text,
             "generation": result.model_dump(mode="json"),
             "evidence": packet.model_dump(mode="json"),
-            "trace": trace.model_dump(mode="json"),
+            "background_evidence": background_packet.model_dump(mode="json"),
+            "reference_evidence": reference_packet.model_dump(mode="json"),
+            "trace": {
+                "background": background_trace.model_dump(mode="json"),
+                "reference": reference_trace.model_dump(mode="json"),
+            },
             "output_dir": str(output_dir),
         }
 

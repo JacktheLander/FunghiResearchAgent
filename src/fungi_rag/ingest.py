@@ -23,22 +23,23 @@ class DocumentIngestor:
         self.settings = settings or get_settings()
         self.repo = ChunkRepository(self.settings.index_dir)
 
-    def ingest_path(self, path: Path | str) -> list[SourceChunk]:
+    def ingest_path(self, path: Path | str, corpus_role: str | None = None) -> list[SourceChunk]:
         target = Path(path)
         files = self._iter_files(target)
         chunks: list[SourceChunk] = []
         for file_path in files:
-            chunks.extend(self.ingest_file(file_path))
+            chunks.extend(self.ingest_file(file_path, corpus_role=corpus_role))
         self.repo.save_chunks(chunks)
         return chunks
 
-    def ingest_file(self, path: Path | str) -> list[SourceChunk]:
+    def ingest_file(self, path: Path | str, corpus_role: str | None = None) -> list[SourceChunk]:
         file_path = Path(path)
         text = extract_text(file_path)
         if not text:
             return []
         metadata = read_sidecar_metadata(file_path)
         display_path = portable_path(file_path)
+        role = infer_corpus_role(metadata, file_path, explicit_role=corpus_role)
         source = SourceDocument(
             source_id=metadata.get("id") or stable_id(display_path, sha256_text(text), length=12),
             title=metadata.get("title") or file_path.stem.replace("-", " ").title(),
@@ -51,6 +52,7 @@ class DocumentIngestor:
             metadata={
                 "mime_type": mimetypes.guess_type(file_path.name)[0],
                 "topics": metadata.get("topics", []),
+                "corpus_role": role,
             },
         )
         pieces = chunk_text(
@@ -64,7 +66,10 @@ class DocumentIngestor:
                 text=piece.text,
                 chunk_index=index,
                 section=piece.section,
-                metadata={"source_hash": source.content_hash},
+                metadata={
+                    "source_hash": source.content_hash,
+                    "corpus_role": source.metadata.get("corpus_role", "background"),
+                },
             )
             for index, piece in enumerate(pieces)
         ]
@@ -178,6 +183,29 @@ def infer_source_type(path: Path) -> str:
     if suffix in {".md", ".markdown"}:
         return "markdown"
     return "text"
+
+
+def infer_corpus_role(
+    metadata: dict[str, object],
+    path: Path,
+    explicit_role: str | None = None,
+) -> str:
+    requested_role = str(explicit_role or "").lower()
+    if requested_role in {"background", "reference"}:
+        return requested_role
+    explicit_role = str(metadata.get("corpus_role") or "").lower()
+    if explicit_role in {"background", "reference"}:
+        return explicit_role
+    path_parts = {part.lower() for part in path.parts}
+    if "background" in path_parts:
+        return "background"
+    if "references" in path_parts or "reference" in path_parts:
+        return "reference"
+    source_id = str(metadata.get("id") or path.stem).lower()
+    title = str(metadata.get("title") or path.stem).lower()
+    if source_id.startswith("pmc_") or "pmc" in source_id or "journal" in title:
+        return "reference"
+    return "background"
 
 
 def main(argv: Iterable[str] | None = None) -> None:

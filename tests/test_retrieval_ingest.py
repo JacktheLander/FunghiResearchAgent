@@ -4,8 +4,9 @@ from pathlib import Path
 
 from fungi_rag.config import Settings
 from fungi_rag.embeddings import HashingEmbeddingBackend
-from fungi_rag.ingest import DocumentIngestor
-from fungi_rag.retrieval import ChunkRepository, HybridRetriever
+from fungi_rag.ingest import DocumentIngestor, infer_corpus_role
+from fungi_rag.models import SourceChunk
+from fungi_rag.retrieval import ChunkRepository, HybridRetriever, filter_chunks_by_role
 
 
 def settings_for(tmp_path: Path) -> Settings:
@@ -76,3 +77,38 @@ def test_retriever_normalizes_funghi_query(tmp_path: Path) -> None:
     packet, _trace = retriever.retrieve("funghi decomposers", top_k=1)
     assert packet.normalized_query == "fungi decomposers"
     assert packet.items
+
+
+def test_sources_split_into_background_and_reference_roles() -> None:
+    assert infer_corpus_role({"id": "openstax_bio_24_1"}, Path("openstax.html")) == "background"
+    assert infer_corpus_role({"id": "pmc_fungal_traits"}, Path("pmc.html")) == "reference"
+    assert infer_corpus_role({}, Path("data/background/book.txt")) == "background"
+    assert infer_corpus_role({}, Path("data/references/paper.txt")) == "reference"
+    assert infer_corpus_role({}, Path("anything.txt"), explicit_role="reference") == "reference"
+
+
+def test_filter_chunks_by_corpus_role() -> None:
+    chunks = [
+        SourceChunk(
+            chunk_id="background:0",
+            source_id="background",
+            title="Background source",
+            text="General fungi background.",
+            chunk_index=0,
+            content_hash="hash1",
+            metadata={"corpus_role": "background"},
+        ),
+        SourceChunk(
+            chunk_id="reference:0",
+            source_id="reference",
+            title="Reference paper",
+            text="Academic fungi reference.",
+            chunk_index=0,
+            content_hash="hash2",
+            metadata={"corpus_role": "reference"},
+        ),
+    ]
+    assert [chunk.source_id for chunk in filter_chunks_by_role(chunks, "background")] == [
+        "background"
+    ]
+    assert [chunk.source_id for chunk in filter_chunks_by_role(chunks, "reference")] == ["reference"]
