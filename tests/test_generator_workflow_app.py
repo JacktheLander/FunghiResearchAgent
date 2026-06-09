@@ -4,7 +4,11 @@ from pathlib import Path
 
 from fungi_rag.app import build_app
 from fungi_rag.evaluate import first_rank_with_terms
-from fungi_rag.generator import CodexBridgeGenerator
+from fungi_rag.generator import (
+    CodexBridgeGenerator,
+    TransformersGenerator,
+    build_generator,
+)
 from fungi_rag.models import EvidenceItem, EvidencePacket, GenerationRequest
 from fungi_rag.workflow import APPROVAL_STAGES, FungiWorkflow, workflow_stage_names
 
@@ -72,6 +76,73 @@ def test_codex_bridge_rejects_unknown_citation(tmp_path: Path) -> None:
     second = CodexBridgeGenerator().generate(request)
     assert second.status == "invalid"
     assert "Unknown citation ids" in " ".join(second.validation_errors)
+
+
+def test_transformers_generator_writes_cited_response(tmp_path: Path, monkeypatch) -> None:
+    def fake_generate_text(self, prompt: str) -> str:  # noqa: ANN001
+        assert "Evidence:" in prompt
+        return "Hyphae can help fungi absorb nutrients because they add surface area."
+
+    monkeypatch.setattr(TransformersGenerator, "_generate_text", fake_generate_text)
+    request = GenerationRequest(
+        run_id="run",
+        step="ask",
+        task="Answer with evidence.",
+        evidence=evidence_packet(),
+        output_dir=tmp_path,
+    )
+    result = TransformersGenerator().generate(request)
+    assert result.status == "accepted"
+    assert "Hyphae" in result.text
+    assert Path(result.response_path).exists()
+
+
+def test_transformers_generator_accepts_answer_without_bracket_citations(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    def fake_generate_text(self, prompt: str) -> str:  # noqa: ANN001
+        return "Hyphae increase surface area and give fungi more contact with nutrients."
+
+    monkeypatch.setattr(TransformersGenerator, "_generate_text", fake_generate_text)
+    request = GenerationRequest(
+        run_id="run",
+        step="ask",
+        task="Answer with evidence.",
+        evidence=evidence_packet(),
+        output_dir=tmp_path,
+    )
+    result = TransformersGenerator().generate(request)
+    assert result.status == "accepted"
+    assert "[" not in result.text
+
+
+def test_transformers_generator_strips_copied_evidence_labels(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    def fake_generate_text(self, prompt: str) -> str:  # noqa: ANN001
+        assert "Evidence item 1" in prompt
+        return "[1] Fungal traits affect decomposition by changing how fungi use nutrients."
+
+    monkeypatch.setattr(TransformersGenerator, "_generate_text", fake_generate_text)
+    request = GenerationRequest(
+        run_id="run",
+        step="ask",
+        task="Answer with evidence.",
+        evidence=evidence_packet(),
+        output_dir=tmp_path,
+    )
+    result = TransformersGenerator().generate(request)
+    assert result.status == "accepted"
+    assert result.text == "Fungal traits affect decomposition by changing how fungi use nutrients."
+
+
+def test_build_generator_supports_transformers(monkeypatch) -> None:
+    monkeypatch.setenv("FUNGI_HF_MODEL", "HuggingFaceTB/SmolLM2-1.7B-Instruct")
+    generator = build_generator("transformers")
+    assert isinstance(generator, TransformersGenerator)
+    assert generator.model_name == "HuggingFaceTB/SmolLM2-1.7B-Instruct"
 
 
 def test_workflow_declares_human_approval_stages() -> None:

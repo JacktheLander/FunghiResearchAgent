@@ -5,8 +5,9 @@ from pathlib import Path
 from fungi_rag.config import Settings
 from fungi_rag.embeddings import HashingEmbeddingBackend
 from fungi_rag.ingest import DocumentIngestor, infer_corpus_role
-from fungi_rag.models import SourceChunk
+from fungi_rag.models import SourceChunk, SourceManifestEntry
 from fungi_rag.retrieval import ChunkRepository, HybridRetriever, filter_chunks_by_role
+from fungi_rag.sources import SourceDownloader, corpus_role_for
 
 
 def settings_for(tmp_path: Path) -> Settings:
@@ -14,6 +15,8 @@ def settings_for(tmp_path: Path) -> Settings:
         embedding_backend="hashing",
         chroma_dir=tmp_path / "chroma",
         upload_dir=tmp_path / "uploads",
+        background_dir=tmp_path / "background",
+        references_dir=tmp_path / "references",
         source_raw_dir=tmp_path / "sources",
         source_state_path=tmp_path / "sources.jsonl",
         index_dir=tmp_path / "index",
@@ -85,6 +88,35 @@ def test_sources_split_into_background_and_reference_roles() -> None:
     assert infer_corpus_role({}, Path("data/background/book.txt")) == "background"
     assert infer_corpus_role({}, Path("data/references/paper.txt")) == "reference"
     assert infer_corpus_role({}, Path("anything.txt"), explicit_role="reference") == "reference"
+
+
+def test_source_downloader_copies_seed_files_to_project_corpus_folders(tmp_path: Path) -> None:
+    settings = settings_for(tmp_path)
+    entry = SourceManifestEntry(
+        id="pmc_test",
+        title="Reference Paper",
+        url="https://example.com/paper",
+        corpus_role="reference",
+    )
+    source_path = settings.source_raw_dir / "pmc-test.html"
+    sidecar_path = source_path.with_suffix(source_path.suffix + ".metadata.json")
+    source_path.write_text("<h1>Reference Paper</h1>", encoding="utf-8")
+    sidecar_path.write_text('{"id": "pmc_test", "title": "Reference Paper"}', encoding="utf-8")
+
+    copied_path = SourceDownloader(settings, rate_limit_seconds=0).copy_entry_to_project_folder(
+        source_path,
+        sidecar_path,
+        entry,
+    )
+
+    assert copied_path == settings.references_dir / "pmc-test.html"
+    assert copied_path.exists()
+    assert '"corpus_role": "reference"' in copied_path.with_suffix(".html.metadata.json").read_text(
+        encoding="utf-8"
+    )
+    assert corpus_role_for(SourceManifestEntry(id="openstax", title="Book", url="https://x.test")) == (
+        "background"
+    )
 
 
 def test_filter_chunks_by_corpus_role() -> None:

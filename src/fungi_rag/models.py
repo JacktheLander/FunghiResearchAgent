@@ -70,6 +70,7 @@ class SourceManifestEntry(BaseModel):
     source_type: Literal["html", "pdf", "text", "markdown"] = "html"
     license_note: str = "Open/public source"
     topics: list[str] = Field(default_factory=list)
+    corpus_role: Literal["background", "reference"] | None = None
 
 
 class SourceManifest(BaseModel):

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import time
 from pathlib import Path
 from typing import Iterable
@@ -26,6 +27,8 @@ class SourceDownloader:
         self.settings = settings or get_settings()
         self.rate_limit_seconds = rate_limit_seconds
         ensure_dir(self.settings.source_raw_dir)
+        ensure_dir(self.settings.background_dir)
+        ensure_dir(self.settings.references_dir)
 
     def download_manifest(self, manifest: SourceManifest, refresh: bool = False) -> list[dict[str, object]]:
         rows: list[dict[str, object]] = []
@@ -47,11 +50,14 @@ class SourceDownloader:
         output_path = self.settings.source_raw_dir / f"{slugify(entry.id)}{extension}"
         sidecar_path = output_path.with_suffix(output_path.suffix + ".metadata.json")
         if output_path.exists() and sidecar_path.exists() and not refresh:
+            project_path = self.copy_entry_to_project_folder(output_path, sidecar_path, entry)
             return {
                 "id": entry.id,
                 "title": entry.title,
                 "url": entry.url,
                 "local_path": str(output_path),
+                "project_path": str(project_path),
+                "corpus_role": corpus_role_for(entry),
                 "status": "skipped_existing",
                 "retrieved_at": utc_now_iso(),
             }
@@ -68,14 +74,17 @@ class SourceDownloader:
                 "source_type": entry.source_type,
                 "license_note": entry.license_note,
                 "topics": entry.topics,
+                "corpus_role": corpus_role_for(entry),
                 "checksum": checksum,
                 "retrieved_at": utc_now_iso(),
                 "http_status": response.status_code,
             }
             sidecar_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+            project_path = self.copy_entry_to_project_folder(output_path, sidecar_path, entry)
             return {
                 **metadata,
                 "local_path": str(output_path),
+                "project_path": str(project_path),
                 "status": "downloaded",
             }
         except Exception as exc:  # noqa: BLE001 - preserve downloader progress across source failures.
@@ -87,6 +96,32 @@ class SourceDownloader:
                 "error": str(exc),
                 "retrieved_at": utc_now_iso(),
             }
+
+    def copy_entry_to_project_folder(
+        self,
+        output_path: Path,
+        sidecar_path: Path,
+        entry: SourceManifestEntry,
+    ) -> Path:
+        role = corpus_role_for(entry)
+        target_dir = self.settings.references_dir if role == "reference" else self.settings.background_dir
+        ensure_dir(target_dir)
+        target_path = target_dir / output_path.name
+        target_sidecar_path = target_path.with_suffix(target_path.suffix + ".metadata.json")
+        shutil.copy2(output_path, target_path)
+        metadata = json.loads(sidecar_path.read_text(encoding="utf-8"))
+        metadata["corpus_role"] = role
+        target_sidecar_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+        return target_path
+
+
+def corpus_role_for(entry: SourceManifestEntry) -> str:
+    if entry.corpus_role in {"background", "reference"}:
+        return entry.corpus_role
+    source_id = entry.id.lower()
+    if source_id.startswith("pmc_"):
+        return "reference"
+    return "background"
 
 
 def extension_for(entry: SourceManifestEntry) -> str:
